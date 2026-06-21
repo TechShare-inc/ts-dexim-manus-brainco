@@ -1,0 +1,37 @@
+# Bimanual Teleop Mock Session — All Mock Interfaces
+#
+# Full bimanual setup with mock hardware for development and testing.
+# No real robots or cameras required.
+#
+# Launch: dexim launch --session bimanual-teleop-mock
+
+session:
+  name: bimanual-teleop-mock
+  description: Bimanual teleop with mock BrainCo hands, no hardware
+
+nodes:
+  # ── Input ──
+  - device: manus
+
+  # ── Left hand (mock) ──
+  - device: brainco_left_mock
+
+  # ── Right hand (mock) ──
+  - device: brainco_right_mock
+
+  # ── Recorder ──
+  - device: recorder_2cam
+
+data_flow:
+  manus:
+    publishes: [tracker_poses, skeleton_states]
+    subscribers: [brainco_left_mock, brainco_right_mock, recorder_2cam]
+  brainco_left_mock:
+    publishes: [joint_states]
+    subscribers: [recorder_2cam]
+  brainco_right_mock:
+    publishes: [joint_states]
+    subscribers: [recorder_2cam]
+  recorder_2cam:
+    publishes: []
+    subscribers: [manus, brainco_left_mock, brainco_right_mock]

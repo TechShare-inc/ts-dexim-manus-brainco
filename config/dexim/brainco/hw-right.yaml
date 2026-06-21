@@ -1,0 +1,14 @@
+# BrainCo Revo2 Hand - Hardware - RIGHT Hand Configuration
+# This config connects to a real BrainCo Revo2 right hand via RS-485 (Modbus).
+
+interface:
+  mode: hw
+  hw:
+    backend: modbus_rs485
+    rs485:
+      port: COM5
+      baud: 460800
+    slave_id: 127
+    auto_detect: false
+brainco:
+  side: right

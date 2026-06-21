@@ -1,0 +1,37 @@
+# Manus Glove Node - Hand Tracking Data Publisher
+# Publishes tracker (rigid pose) and skeleton (hand state) data on the data plane.
+# All downstream nodes (brainco) subscribe to this publisher.
+
+# ZMQ data endpoint - binds to all interfaces so other nodes can connect.
+# Port 5555 is the well-known "manus" port from NODE_DATA_PORTS.
+data_endpoint: tcp://*:5555
+
+# Control/status plane endpoints
+control_endpoint: tcp://localhost:5550
+status_endpoint: tcp://localhost:5551
+
+# Publishing rate (Hz) - 60 Hz matches Manus glove native rate
+rate_hz: 60.0
+
+# Manus Core SDK connection settings
+client:
+  connection_check_interval: 5.0
+  connect_timeout_sec: 10.0
+  queue_maxsize: 5
+
+# World-frame calibration
+calibration:
+  # Directory containing calibration JSON files (e.g. world_calibration_*.json)
+  calibration_dir: calibrations
+  # Set to true to run in raw (uncalibrated) mode
+  skip: false
+
+# Which data streams to publish
+publisher:
+  publish_trackers: true
+  publish_skeletons: true
+
+# Logging intervals
+metrics:
+  metrics_log_interval: 10.0
+  landscape_log_interval: 60.0

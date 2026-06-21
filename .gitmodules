@@ -1,0 +1,32 @@
+[submodule "packages/dexim-manus"]
+	path = packages/dexim-manus
+	url = https://github.com/TechShare-inc/ts-dexim-manus
+	branch = dev
+[submodule "packages/dexim-brainco"]
+	path = packages/dexim-brainco
+	url = https://github.com/TechShare-inc/ts-dexim-brainco
+	branch = dev
+[submodule "packages/dexim-cli-common"]
+	path = packages/dexim-cli-common
+	url = https://github.com/TechShare-inc/ts-dexim-cli-common.git
+	branch = dev
+[submodule "packages/dexim-core"]
+	path = packages/dexim-core
+	url = https://github.com/TechShare-inc/ts-dexim-core.git
+	branch = dev
+[submodule "packages/manus-sdk-python"]
+	path = packages/manus-sdk-python
+	url = https://github.com/TechShare-inc/manus-sdk-python.git
+	branch = release/0.4.0-alpha.2
+[submodule "packages/dexim-realsense"]
+	path = packages/dexim-realsense
+	url = https://github.com/TechShare-inc/ts-dexim-realsense
+	branch = dev
+[submodule "packages/dexim-recorder"]
+	path = packages/dexim-recorder
+	url = https://github.com/TechShare-inc/ts-dexim-recorder
+	branch = dev
+[submodule "packages/dexim-visualizer"]
+	path = packages/dexim-visualizer
+	url = git@github.com:TechShare-inc/dexim-visualizer.git
+	branch = dev

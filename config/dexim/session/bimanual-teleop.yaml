@@ -1,0 +1,38 @@
+# Bimanual Teleop Session — Hardware Mode
+#
+# Full bimanual setup with real BrainCo hands.
+# Requires: Manus glove, BrainCo Revo2 left hand (COM5/RS-485, slave 126),
+#           BrainCo Revo2 right hand (COM5/RS-485, slave 127).
+#
+# Launch: dexim launch --session bimanual-teleop
+
+session:
+  name: bimanual-teleop
+  description: Bimanual teleop with real BrainCo hands
+
+nodes:
+  # ── Input ──
+  - device: manus
+
+  # ── Left hand (hardware) ──
+  - device: brainco_left
+
+  # ── Right hand (hardware) ──
+  - device: brainco_right
+
+  # ── Recorder ──
+  - device: recorder_2cam
+
+data_flow:
+  manus:
+    publishes: [tracker_poses, skeleton_states]
+    subscribers: [brainco_left, brainco_right, recorder_2cam]
+  brainco_left:
+    publishes: [joint_states]
+    subscribers: [recorder_2cam]
+  brainco_right:
+    publishes: [joint_states]
+    subscribers: [recorder_2cam]
+  recorder_2cam:
+    publishes: []
+    subscribers: [manus, brainco_left, brainco_right]

@@ -1,0 +1,25 @@
+# Single-Hand Teleop Session — Hardware Mode
+#
+# Single-hand teleop with real BrainCo left hand.
+# Requires: Manus glove, BrainCo Revo2 left hand (COM5/RS-485).
+#
+# Launch: dexim launch --session single-hand-teleop
+
+session:
+  name: single-hand-teleop
+  description: Single-hand teleop with real BrainCo left hand
+
+nodes:
+  # ── Input ──
+  - device: manus
+
+  # ── Left hand (hardware) ──
+  - device: brainco_left
+
+data_flow:
+  manus:
+    publishes: [tracker_poses, skeleton_states]
+    subscribers: [brainco_left]
+  brainco_left:
+    publishes: [joint_states]
+    subscribers: []

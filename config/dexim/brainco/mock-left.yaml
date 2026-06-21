@@ -1,0 +1,8 @@
+# BrainCo Revo2 Hand - Mock (Simulation) - LEFT Hand Configuration
+# This config runs a mock interface (in-process loopback, no hardware).
+# Useful for testing and development without a real BrainCo Revo2 hand.
+
+interface:
+  mode: mock
+brainco:
+  side: left

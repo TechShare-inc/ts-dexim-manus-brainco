@@ -1,0 +1,25 @@
+# Single-Hand Teleop Mock Session — All Mock Interfaces
+#
+# Single-hand setup with mock hardware for development and testing.
+# No real robots or cameras required.
+#
+# Launch: dexim launch --session single-hand-teleop-mock
+
+session:
+  name: single-hand-teleop-mock
+  description: Single-hand teleop with mock BrainCo hand, no hardware
+
+nodes:
+  # ── Input ──
+  - device: manus
+
+  # ── Left hand (mock) ──
+  - device: brainco_left_mock
+
+data_flow:
+  manus:
+    publishes: [tracker_poses, skeleton_states]
+    subscribers: [brainco_left_mock]
+  brainco_left_mock:
+    publishes: [joint_states]
+    subscribers: []

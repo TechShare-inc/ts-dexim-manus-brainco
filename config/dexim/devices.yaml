@@ -1,0 +1,33 @@
+# Device Registry — maps logical device names to their package + config file.
+# Session configs reference devices by name from this registry.
+#
+# Pattern: <device_name>:
+#            package: <pip-package-name>
+#            config:  <config-filename-without-.yaml>
+
+# ── Input devices ────────────────────────────────────────────────────────────
+manus:
+  package: dexim-manus
+  config: manus/default
+
+# ── BrainCo hands ─────────────────────────────────────────────────────────────
+brainco_left:
+  package: dexim-brainco
+  config: brainco/hw-left
+
+brainco_right:
+  package: dexim-brainco
+  config: brainco/hw-right
+
+brainco_left_mock:
+  package: dexim-brainco
+  config: brainco/mock-left
+
+brainco_right_mock:
+  package: dexim-brainco
+  config: brainco/mock-right
+
+# ── Recorder ──────────────────────────────────────────────────────────────────
+recorder_2cam:
+  package: dexim-recorder
+  config: recorder/2-cam
