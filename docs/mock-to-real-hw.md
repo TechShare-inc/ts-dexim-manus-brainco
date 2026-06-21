@@ -17,8 +17,8 @@ The system has two hardware abstraction layers:
 flowchart LR
     subgraph Session["Session YAML (session/*.yaml)"]
         direction LR
-        SM[singe-hand-teleop-mock.yaml] -->|references| DBM[brainco_left_mock]
-        SH[singe-hand-teleop.yaml] -->|references| DBH[brainco_left]
+        SM[single-hand-teleop-mock.yaml] -->|references| DBM[brainco_left_mock]
+        SH[single-hand-teleop.yaml] -->|references| DBH[brainco_left]
     end
 
     subgraph Registry["Device Registry (devices.yaml)"]
@@ -42,8 +42,9 @@ flowchart LR
 Before touching hardware, confirm the mock pipeline is functional.
 
 ```powershell
-# Ensure the base environment is installed
+# Ensure the base environment is installed AND the Manus SDK is built
 pixi install
+pixi run manus-build
 
 # Launch single-hand mock session
 pixi run dexim launch --session single-hand-teleop-mock
@@ -60,13 +61,27 @@ This spawns:
 
 The interactive TUI shows live status for each node. Use the **Ctrl** menu (`dexim ctrl`) to send lifecycle commands (START, STOP, record, etc.).
 
+### Visual confirmation with the 3D visualizer
+
+In a second terminal, run the session visualizer to see the robot hands in a 3D web view:
+
+```powershell
+pixi run dexim viz --session single-hand-teleop-mock
+```
+
+Open **http://localhost:8080** in a browser. The visualizer shows real-time
+joint states for every visualizable robot node in the session. Press
+**Ctrl+C** to stop.
+
 ### Troubleshooting mock
 
-| Symptom                     | Likely cause                 | Fix                                           |
-| --------------------------- | ---------------------------- | --------------------------------------------- |
-| `Device registry not found` | Wrong working directory      | Run from repo root, or set `DEXIM_CONFIG_DIR` |
-| Manus node status UNKNOWN   | Manus SDK not installed      | Run `pixi install`                            |
-| `ImportError: dexim.cli`    | Editable installs not set up | `pixi install`                                |
+| Symptom                     | Likely cause                     | Fix                                                                      |
+| --------------------------- | -------------------------------- | ------------------------------------------------------------------------ |
+| `Device registry not found` | Wrong working directory          | Run from repo root, or set `DEXIM_CONFIG_DIR`                            |
+| Manus node status UNKNOWN   | Manus SDK not installed or built | Run `pixi install` then `pixi run manus-build`                           |
+| `ImportError: dexim.cli`    | Editable installs not set up     | `pixi install`                                                           |
+| Visualizer shows no robots  | `dexim-brainco` not installed    | Ensure `pixi install` completed; the package auto-registers its renderer |
+| Hand poses look wrong in 3D | Retargeting parameters off       | Run `dexim viz` alongside to visually inspect joint data                 |
 
 ---
 
@@ -207,6 +222,24 @@ The launch sequence:
 - Status transitions: `UNKNOWN` → `INITIALIZED` → `STANDBY` → `STARTED`
 - Use `dexim ctrl` (or the TUI) to send `START` to begin teleoperation
 - The Manus glove tracker poses flow through ZMQ to the BrainCo nodes, which command the physical hand
+
+### Lifecycle commands
+
+| Command    | When to use                                    | Effect                                              |
+| ---------- | ---------------------------------------------- | --------------------------------------------------- |
+| `START`    | After all nodes reach `STANDBY` (green in TUI) | Begins the control loop — teleoperation goes live   |
+| `STOP`     | To pause teleoperation                         | Suspends the control loop; nodes stay in `STANDBY`  |
+| `RECORD`   | To capture data to disk                        | Starts/stops the recorder writing to a session file |
+| `RESET`    | If a node enters `ERROR` state                 | Attempts to recover the node                        |
+| `SHUTDOWN` | To end the session                             | Gracefully stops all nodes and cleans up            |
+
+Send commands from the TUI's Ctrl menu or via `dexim ctrl`:
+
+```powershell
+pixi run dexim ctrl START
+pixi run dexim ctrl STOP
+pixi run dexim ctrl SHUTDOWN
+```
 
 ---
 
