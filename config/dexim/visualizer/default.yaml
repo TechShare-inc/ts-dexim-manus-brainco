@@ -1,0 +1,4 @@
+# Visualizer config — default setup
+# TODO: Populate with dexim-visualizer package schema once available.
+visualizer:
+  name: visualizer

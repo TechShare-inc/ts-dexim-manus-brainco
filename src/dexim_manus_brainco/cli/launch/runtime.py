@@ -55,6 +55,7 @@ class NodeRuntime:
     launched_at: datetime | None = None
     info: StatusInfo = field(default_factory=StatusInfo)
     ps_healthy: bool = True
+    restart_count: int = 0
     stdout_tail: collections.deque[str] = field(
         default_factory=lambda: collections.deque(maxlen=_STDOUT_TAIL_LINES)
     )

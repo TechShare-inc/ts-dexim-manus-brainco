@@ -17,6 +17,7 @@ from typing import Any
 
 from dexim.core.messages import (
     CTRL_SHUTDOWN,
+    STATUS_ERROR,
     STATUS_STARTED,
 )
 
@@ -32,9 +33,12 @@ from ..session_loader import NodeSpec, SessionPlan
 # ---------------------------------------------------------------------------
 
 # Input node (manus) health gate
-_INPUT_HEALTHY_TIMEOUT_S: float = 10.0
 _INPUT_READY_TIMEOUT_S: float = 120.0
 _INPUT_HEALTH_POLL_INTERVAL_S: float = 0.25
+
+# Node auto-restart
+_MAX_NODE_RESTARTS: int = 3
+_NODE_RESTART_BACKOFF_BASE: float = 2.0
 
 
 # ---------------------------------------------------------------------------
@@ -122,6 +126,17 @@ class LaunchOrchestrator:
     def plan(self) -> SessionPlan:
         """The session plan."""
         return self._plan
+
+    @property
+    def is_complete(self) -> bool:
+        """``True`` if all planned nodes are running and healthy."""
+        if self._launch_error is not None:
+            return False
+        expected = len(self._plan.nodes)
+        if expected == 0:
+            return True
+        alive_healthy = sum(1 for n in self.nodes if n.is_running and n.is_healthy)
+        return alive_healthy == expected
 
     @property
     def launch_error(self) -> Exception | None:
@@ -342,3 +357,70 @@ class LaunchOrchestrator:
             msg=f"{old_status} → {new_status}",
             node=runtime.spec.device_name,
         )
+
+        # Attempt restart on ERROR or DEAD (silent process death)
+        if new_status in (STATUS_ERROR, "DEAD"):
+            self._restart_node(runtime)
+
+    # ------------------------------------------------------------------
+    # Internal: node restart
+    # ------------------------------------------------------------------
+
+    def _restart_node(self, runtime: NodeRuntime) -> None:
+        """Attempt to restart a failed node (non-input nodes only).
+
+        Input nodes (manus, priority 0) are not auto-restarted because
+        restart would require re-doing the priority launch sequence.
+
+        Args:
+            runtime: The node runtime to restart.
+        """
+        # Only restart non-input nodes
+        if runtime.spec.priority == 0:
+            self._emit_event(
+                "warn",
+                msg=(
+                    f"Input node '{runtime.spec.device_name}' died — "
+                    f"manual restart required"
+                ),
+                node=runtime.spec.device_name,
+            )
+            return
+
+        if runtime.restart_count >= _MAX_NODE_RESTARTS:
+            self._emit_event(
+                "error",
+                msg=(
+                    f"Node '{runtime.spec.device_name}' reached max "
+                    f"restarts ({_MAX_NODE_RESTARTS})"
+                ),
+                node=runtime.spec.device_name,
+            )
+            return
+
+        self._emit_event(
+            "warn",
+            msg=f"Restarting node '{runtime.spec.device_name}' "
+            f"(attempt {runtime.restart_count + 1}/{_MAX_NODE_RESTARTS})",
+            node=runtime.spec.device_name,
+        )
+
+        # Terminate old process
+        if runtime.process is not None and runtime.process.poll() is None:
+            runtime.process.terminate()
+            try:
+                runtime.process.wait(timeout=3.0)
+            except Exception:
+                runtime.process.kill()
+                runtime.process.wait()
+
+        # Exponential backoff
+        delay = _NODE_RESTART_BACKOFF_BASE**runtime.restart_count
+        time.sleep(delay)
+
+        # Reset tracking state and re-spawn
+        runtime.status = "UNKNOWN"
+        runtime.last_heartbeat = time.monotonic()
+        runtime.restart_count += 1
+
+        self._launcher.launch(runtime.spec)

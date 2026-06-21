@@ -23,6 +23,7 @@ from typing import Any
 import yaml
 
 DEXIM_CONFIG_DIR_ENV = "DEXIM_CONFIG_DIR"
+DEXIM_BRAINCO_PORT_ENV = "DEXIM_BRAINCO_PORT"
 _DEFAULT_CONFIG_DIR = "./config"
 
 
@@ -75,6 +76,7 @@ class NodeSpec:
     config_path: Path
     expected_node_id: str
     priority: int = _DEFAULT_NODE_PRIORITY
+    port_override: str | None = None
 
 
 @dataclass
@@ -92,6 +94,33 @@ class SessionPlan:
     description: str = ""
     nodes: list[NodeSpec] = field(default_factory=list)
     data_flow: dict[str, Any] = field(default_factory=dict)
+
+    def validate(self) -> None:
+        """Validate that ``data_flow`` references only known devices.
+
+        Checks that every subscriber listed in ``data_flow`` refers to a
+        device present in ``self.nodes``.  Raises ``ValueError`` if any
+        unknown device is referenced.
+
+        Raises:
+            ValueError: If a subscriber references a device that is not
+                in the session's node list.
+        """
+        node_names = {node.device_name for node in self.nodes}
+
+        for device_name, flow in self.data_flow.items():
+            if not isinstance(flow, dict):
+                continue
+            subscribers = flow.get("subscribers", [])
+            if not isinstance(subscribers, list):
+                continue
+            for sub in subscribers:
+                if isinstance(sub, str) and sub not in node_names:
+                    raise ValueError(
+                        f"data_flow subscriber '{sub}' (referenced by "
+                        f"'{device_name}') is not a device in this session. "
+                        f"Known devices: {', '.join(sorted(node_names)) or '(none)'}"
+                    )
 
 
 # ---------------------------------------------------------------------------
@@ -310,6 +339,9 @@ def load_session(
         data_flow=data.get("data_flow", {}),
     )
 
+    # Read port override for brainco devices
+    brainco_port = os.environ.get(DEXIM_BRAINCO_PORT_ENV) or None
+
     # Resolve each node
     raw_nodes: list[dict[str, str]] = data.get("nodes", [])
     if not raw_nodes:
@@ -345,6 +377,8 @@ def load_session(
             else _DEFAULT_NODE_PRIORITY
         )
 
+        port_override = brainco_port if entry.package == "dexim-brainco" else None
+
         plan.nodes.append(
             NodeSpec(
                 device_name=device_name,
@@ -353,7 +387,9 @@ def load_session(
                 config_path=config_path.resolve(),
                 expected_node_id=_derive_expected_node_id(entry.package, device_name),
                 priority=priority,
+                port_override=port_override,
             )
         )
 
+    plan.validate()
     return plan

@@ -289,6 +289,12 @@ class StatusMonitor:
                 pass
 
             if was_healthy and not runtime.ps_healthy:
+                # Fire state-change to trigger orchestrator restart logic
+                if self._on_state_change is not None:
+                    try:
+                        self._on_state_change(runtime, runtime.status, "DEAD")
+                    except Exception:
+                        pass
                 if self._on_event is not None:
                     try:
                         rc = runtime.process.poll() if runtime.process else None

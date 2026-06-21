@@ -31,3 +31,13 @@ brainco_right_mock:
 recorder_2cam:
   package: dexim-recorder
   config: recorder/2-cam
+
+# ── RealSense cameras ────────────────────────────────────────────────────────
+realsense:
+  package: dexim-realsense
+  config: realsense/default
+
+# ── Visualizer ────────────────────────────────────────────────────────────────
+visualizer:
+  package: dexim-visualizer
+  config: visualizer/default

@@ -1,0 +1,6 @@
+# RealSense camera config — default setup
+# TODO: Populate with dexim-realsense package schema once available.
+realsense:
+  name: realsense
+  streams:
+    enabled: true

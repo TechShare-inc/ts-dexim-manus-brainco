@@ -16,7 +16,6 @@ import sys
 import threading
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
 
 import readchar
 from dexim.cli.common import get_console
@@ -40,71 +39,71 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-# Sentinel for the "raw command" entry row
-_RAW_CMD_SENTINEL = "__RAW__"
+from .menu_item import MenuItem, _RAW_CMD_SENTINEL
 
 # Type alias: takes (endpoint: str, frames: list[bytes]) → None
 PubSendFn = Callable[[str, list[bytes]], None]
 
 
-@dataclass
-class CtrlMenuItem:
-    """One row in the interactive command menu.
-
-    Attributes:
-        label: Short display name shown in the menu.
-        description: One-line description shown in the second column.
-        cmd_const: The control-plane command constant to send, or
-            ``_RAW_CMD_SENTINEL`` for the free-text raw entry row.
-        needs_task_input: If True, pause Live and prompt for task-id and
-            description before building the message frames.
-        is_dangerous: If True, show a confirmation prompt before sending.
-    """
-
-    label: str
-    description: str
-    cmd_const: str
-    needs_task_input: bool = False
-    is_dangerous: bool = False
-
-
 # Ordered menu: lifecycle → recording → raw
-MENU_ITEMS: list[CtrlMenuItem] = [
-    CtrlMenuItem(CTRL_START, "Begin robot control on all nodes", CTRL_START),
-    CtrlMenuItem(CTRL_PAUSE, "Pause control (hold position, quick resume)", CTRL_PAUSE),
-    CtrlMenuItem(CTRL_STOP, "Stop control (move to safe position)", CTRL_STOP),
-    CtrlMenuItem(
-        CTRL_STANDBY,
-        "Return to standby (keep hardware connected, deactivate control)",
-        CTRL_STANDBY,
+MENU_ITEMS: list[MenuItem] = [
+    MenuItem(
+        label=CTRL_START, description="Begin robot control on all nodes", cmd=CTRL_START
     ),
-    CtrlMenuItem(
-        CTRL_SHUTDOWN,
-        "Shut down all nodes",
-        CTRL_SHUTDOWN,
+    MenuItem(
+        label=CTRL_PAUSE,
+        description="Pause control (hold position, quick resume)",
+        cmd=CTRL_PAUSE,
+    ),
+    MenuItem(
+        label=CTRL_STOP,
+        description="Stop control (move to safe position)",
+        cmd=CTRL_STOP,
+    ),
+    MenuItem(
+        label=CTRL_STANDBY,
+        description="Return to standby (keep hardware connected, deactivate control)",
+        cmd=CTRL_STANDBY,
+    ),
+    MenuItem(
+        label=CTRL_SHUTDOWN,
+        description="Shut down all nodes",
+        cmd=CTRL_SHUTDOWN,
         is_dangerous=True,
     ),
-    CtrlMenuItem(CTRL_START_REC, "Start data recording", CTRL_START_REC),
-    CtrlMenuItem(CTRL_STOP_REC, "Stop recording and save episode", CTRL_STOP_REC),
-    CtrlMenuItem(
-        CTRL_DISCARD_REC,
-        "Discard current episode without saving",
-        CTRL_DISCARD_REC,
+    MenuItem(
+        label=CTRL_START_REC, description="Start data recording", cmd=CTRL_START_REC
+    ),
+    MenuItem(
+        label=CTRL_STOP_REC,
+        description="Stop recording and save episode",
+        cmd=CTRL_STOP_REC,
+    ),
+    MenuItem(
+        label=CTRL_DISCARD_REC,
+        description="Discard current episode without saving",
+        cmd=CTRL_DISCARD_REC,
         is_dangerous=True,
     ),
-    CtrlMenuItem(
-        CTRL_SET_TASK,
-        "Set active task metadata on all nodes",
-        CTRL_SET_TASK,
-        needs_task_input=True,
+    MenuItem(
+        label=CTRL_SET_TASK,
+        description="Set active task metadata on all nodes",
+        cmd=CTRL_SET_TASK,
+        needs_text_input=True,
     ),
-    CtrlMenuItem(CTRL_START_PUB, "Resume data publishing", CTRL_START_PUB),
-    CtrlMenuItem(CTRL_PAUSE_PUB, "Pause data publishing", CTRL_PAUSE_PUB),
-    CtrlMenuItem(CTRL_STOP_PUB, "Stop data publishing", CTRL_STOP_PUB),
-    CtrlMenuItem(
-        _RAW_CMD_SENTINEL,
-        "Send a raw control-plane command string",
-        _RAW_CMD_SENTINEL,
+    MenuItem(
+        label=CTRL_START_PUB, description="Resume data publishing", cmd=CTRL_START_PUB
+    ),
+    MenuItem(
+        label=CTRL_PAUSE_PUB, description="Pause data publishing", cmd=CTRL_PAUSE_PUB
+    ),
+    MenuItem(
+        label=CTRL_STOP_PUB, description="Stop data publishing", cmd=CTRL_STOP_PUB
+    ),
+    MenuItem(
+        label=_RAW_CMD_SENTINEL,
+        description="Send a raw control-plane command string",
+        cmd=_RAW_CMD_SENTINEL,
     ),
 ]
 
@@ -198,7 +197,7 @@ def run_ctrl_session(endpoint: str, pub_send_fn: PubSendFn) -> None:
                 item = MENU_ITEMS[selected_index]
                 live.stop()
 
-                if item.cmd_const == _RAW_CMD_SENTINEL:
+                if item.cmd == _RAW_CMD_SENTINEL:
                     console.print()
                     raw = input("  Command string: ").strip()
                     console.print()
@@ -217,9 +216,9 @@ def run_ctrl_session(endpoint: str, pub_send_fn: PubSendFn) -> None:
                     )
                     console.print()
                     if confirm in ("y", "yes"):
-                        frames = [TOPIC_CTRL, item.cmd_const.encode("utf-8")]
+                        frames = [TOPIC_CTRL, item.cmd.encode("utf-8")]
                         pub_send_fn(endpoint, frames)
-                elif item.needs_task_input:
+                elif item.needs_text_input:
                     console.print()
                     task_id = input("  Task ID: ").strip()
                     task_desc = input("  Description: ").strip()
@@ -230,12 +229,12 @@ def run_ctrl_session(endpoint: str, pub_send_fn: PubSendFn) -> None:
                         ).encode("utf-8")
                         frames = [
                             TOPIC_CTRL,
-                            item.cmd_const.encode("utf-8"),
+                            item.cmd.encode("utf-8"),
                             payload,
                         ]
                         pub_send_fn(endpoint, frames)
                 else:
-                    frames = [TOPIC_CTRL, item.cmd_const.encode("utf-8")]
+                    frames = [TOPIC_CTRL, item.cmd.encode("utf-8")]
                     pub_send_fn(endpoint, frames)
 
                 live.start()

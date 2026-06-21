@@ -96,10 +96,16 @@ class CommandBuilder:
         """
         subcommand = _resolve_subcommand(spec.package)
 
-        return [
+        cmd: list[str] = [
             *self._dexim_prefix,
             subcommand,
             "run",
             "--config",
             str(spec.config_path),
         ]
+
+        # Inject COM port override for brainco devices
+        if spec.port_override is not None:
+            cmd.extend(["--port", spec.port_override])
+
+        return cmd

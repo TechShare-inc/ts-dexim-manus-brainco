@@ -1,0 +1,5 @@
+# Recorder config — 2-camera setup
+# TODO: Populate with dexim-recorder package schema once available.
+recorder:
+  name: recorder_2cam
+  cameras: 2

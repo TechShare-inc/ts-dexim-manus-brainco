@@ -67,6 +67,7 @@ from rich.text import Text
 
 from .launch.orchestrator import LaunchOrchestrator
 from .log_server import LogStore
+from .menu_item import MenuItem, _RAW_CMD_SENTINEL
 from .session_loader import SessionPlan
 
 # ---------------------------------------------------------------------------
@@ -79,31 +80,6 @@ CommandFn = Callable[[str], None]
 # ---------------------------------------------------------------------------
 # Menu definition
 # ---------------------------------------------------------------------------
-
-
-# Sentinel for the free-text raw-command entry
-_RAW_CMD_SENTINEL = "__RAW__"
-
-
-@dataclass
-class MenuItem:
-    """One row in the lifecycle command menu.
-
-    Attributes:
-        label: Short display name.
-        cmd: The control-plane command string to send, or ``_RAW_CMD_SENTINEL``
-            for the free-text entry.
-        section: Menu section name for grouping (``"Teleop"`` or ``"Raw"``).
-        is_dangerous: If True, requires confirmation before sending.
-        needs_text_input: If True, pause the TUI to prompt for text input
-            (used for SET_TASK and raw commands).
-    """
-
-    label: str
-    cmd: str
-    section: str = "Teleop"
-    is_dangerous: bool = False
-    needs_text_input: bool = False
 
 
 #: High-level teleoperation commands.
@@ -299,6 +275,17 @@ def _render_menu(
     # HTTP link
     lines.append(Text.from_markup(f"[muted]Log:[/] [link={http_url}]{http_url}[/]"))
     lines.append(Text(""))
+
+    # Session-incomplete warning
+    if not manager.is_complete:
+        lines.append(
+            Text.from_markup(
+                "[on #440] ⚠ Session incomplete — some nodes failed to launch or are unhealthy [/]"
+            )
+        )
+        if manager.launch_error is not None:
+            lines.append(Text.from_markup(f"[error]   {manager.launch_error}[/]"))
+        lines.append(Text(""))
 
     # High-Level Teleop commands
     lines.append(Text.from_markup("[muted]-- Teleop --[/]"))
